@@ -10,6 +10,12 @@ The `design` branch's React/Vite app is connected to the Django catalog, scoring
 engine, and Advisor. Build a five-initiative plan, calculate its impact on Astana's
 five districts, and discuss the server's results with the Advisor.
 
+The interactive game map selects districts and shows critical-indicator icons.
+Click a school/healthcare warning in Нура (or a problem in the city-status list)
+to open its details and find relevant measures. After simulation, the map updates
+its district scores and warning pins; use the before/after toggle to compare.
+The illustrated map uses schematic boundaries, not official geographic borders.
+
 ## Run the app
 
 Use Python 3.12+ and Node.js 22.18+ (Node 24 LTS recommended).

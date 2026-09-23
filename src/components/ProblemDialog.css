@@ -1,0 +1,36 @@
+.problem-dialog { width: min(620px, calc(100vw - 32px)); max-height: min(840px, calc(100dvh - 48px)); padding: 0; color: #e4edf6; background: #111e2b; border: 1px solid #375063; border-radius: 18px; box-shadow: 0 28px 100px #0009; overflow: hidden; }
+.problem-dialog[open] { display: flex; flex-direction: column; }
+.problem-dialog::backdrop { background: #030b13b8; backdrop-filter: blur(5px); }
+.problem-header { display: flex; align-items: center; gap: 14px; padding: 24px; border-bottom: 1px solid #293c4b; flex-shrink: 0; }
+.problem-icon { display: grid; place-items: center; width: 50px; height: 50px; flex-shrink: 0; border-radius: 14px; color: #65d9c3; background: #1b403f; border: 1px solid #326460; }
+.problem-icon.critical { color: #ffc28c; background: #453529; border-color: #735038; }
+.problem-heading { min-width: 0; flex: 1; }
+.problem-heading p { color: #90aabe; font-size: 11px; margin-bottom: 5px; }
+.problem-heading h2 { font-size: 20px; overflow-wrap: anywhere; }
+.problem-close { display: grid; place-items: center; width: 36px; height: 36px; padding: 0; border-radius: 9px; flex-shrink: 0; background: #1b2b3a; color: #a9bdce; }
+.problem-content { padding: 24px; overflow-y: auto; overscroll-behavior: contain; min-height: 0; scrollbar-width: thin; scrollbar-color: #456078 transparent; }
+.problem-reading { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; padding: 17px 20px; background: #142d35; border: 1px solid #305252; border-radius: 11px; }
+.problem-reading > div + div { padding-left: 20px; border-left: 1px solid #35505a; }
+.problem-reading span { display: block; font-size: 11px; color: #a3b8c9; }
+.problem-reading strong { display: block; font-size: 30px; font-weight: 650; font-variant-numeric: tabular-nums; color: #7bddc5; }
+.problem-reading strong small { font-size: 13px; color: #8eabbc; font-weight: 400; }
+.problem-reading > div + div strong { color: #b7c8d8; }
+.problem-reading.critical { background: #362d28; border-color: #604837; }
+.problem-reading.critical > div:first-child strong { color: #f4b786; }
+.problem-explanation { color: #c5d3df; font-size: 13px; margin-top: 17px; }
+.problem-meaning { color: #8fa6bb; font-size: 12px; margin-top: 9px; }
+.problem-measures { margin-top: 26px; }
+.problem-measures h3 { font-size: 15px; display: flex; align-items: center; gap: 9px; }
+.problem-measures h3 span { font-size: 10px; font-weight: 500; color: #85cabd; background: #233d40; padding: 3px 7px; border-radius: 5px; }
+.problem-effects-note { font-size: 11px; line-height: 1.55; color: #8da5b9; margin-top: 8px; }
+.problem-measures ul { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; gap: 9px; }
+.problem-measures li { padding: 13px 14px; border: 1px solid #2b4153; border-radius: 9px; background: #172837; }
+.problem-measure-name { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+.problem-measure-name strong { font-size: 12px; font-weight: 550; line-height: 1.5; }
+.problem-measure-name > span { flex-shrink: 0; color: #7dd8bc; background: #22433d; padding: 3px 7px; border-radius: 5px; font-size: 11px; }
+.problem-measures li p { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 10px; color: #97b0c4; margin-top: 8px; }
+.problem-no-measures { margin-top: 15px; color: #b0c3d2; font-size: 12px; }
+.problem-footer { flex-shrink: 0; padding: 16px 24px; border-top: 1px solid #293c4b; background: #142331; }
+.problem-footer button { display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; padding: 12px 16px; background: #50dfc4; border-color: #50dfc4; border-radius: 9px; color: #0d2928; font-size: 13px; font-weight: 650; }
+.problem-footer button:hover:not(:disabled) { background: #73ecd5; }
+@media (max-width: 600px) { .problem-dialog { width: calc(100vw - 20px); max-height: calc(100dvh - 24px); border-radius: 14px; } .problem-header { padding: 18px 16px; gap: 10px; } .problem-icon { width: 42px; height: 42px; border-radius: 11px; } .problem-heading h2 { font-size: 16px; } .problem-content { padding: 18px 16px; } .problem-reading { gap: 12px; padding: 14px; } .problem-reading > div + div { padding-left: 12px; } .problem-reading span { font-size: 10px; } .problem-reading strong { font-size: 28px; } .problem-footer { padding: 14px 16px; } }

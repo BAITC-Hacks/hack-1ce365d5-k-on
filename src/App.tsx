@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
 import { chat, getCatalog, simulate, type Catalog, type Decision, type SimulationResponse } from './api'
 import { canAddDecision, planCost, validatePlan } from './planning'
+import { MapPin, TriangleAlert, CheckCircle2, School, Hospital, Plus, Check, ArrowUpRight, X, Send, Sparkles, Clock3 } from 'lucide-react'
+import CityMap from './components/CityMap'
+import { ProblemDialog } from './components/ProblemDialog'
+import DirectionIcon from './components/DirectionIcon'
+import { cityIssues, type CityIssue } from './city'
 import './App.css'
 
 type Message = { role: 'user' | 'assistant'; text: string }
@@ -15,6 +20,9 @@ function App() {
   const [reload, setReload] = useState(0)
   const [districtId, setDistrictId] = useState('')
   const [direction, setDirection] = useState('')
+  const [problemFilter, setProblemFilter] = useState('')
+  const [issueKey, setIssueKey] = useState<string | null>(null)
+  const [mapMode, setMapMode] = useState<'baseline' | 'result'>('baseline')
   const [decisions, setDecisions] = useState<Decision[]>([])
   const [run, setRun] = useState<SimulationResponse | null>(null)
   const [busy, setBusy] = useState<'simulation' | 'chat' | null>(null)
@@ -50,16 +58,39 @@ function App() {
   const validation = catalog ? validatePlan(catalog, decisions) : []
   const selectedDistrict = catalog?.districts.find((district) => district.id === districtId)
   const directions = [...new Set(catalog?.measures.map((measure) => measure.direction).filter((value): value is string => Boolean(value)) ?? [])]
-  const measures = catalog?.measures.filter((measure) => !direction || measure.direction === direction) ?? []
+  const measures = catalog?.measures.filter((measure) => (!direction || measure.direction === direction) && (!problemFilter || (measure.full_effects?.[problemFilter] ?? 0) > 0)) ?? []
   const result = run?.simulation.result
   const districtScores = asRecord(result?.district_scores)
   const finalIndicators = asRecord(result?.district_indicators)
   const baselineIndicators = asRecord(asRecord(result?.baseline).district_indicators)
+  const showForecast = mapMode === 'result' && Object.keys(finalIndicators).length > 0
+  const issues = catalog ? cityIssues(catalog, showForecast ? finalIndicators : undefined) : []
+  const activeIssue = issues.find((issue) => `${issue.districtId}:${issue.indicatorId}` === issueKey) ?? null
+  const displayIndicators = showForecast ? asRecord(finalIndicators[districtId]) : selectedDistrict?.initial_indicators ?? {}
   const changed = Boolean(run && JSON.stringify(run.simulation.decisions) !== JSON.stringify(decisions))
   const describeDecision = (decision: Decision) => ({
     name: catalog?.measures.find((measure) => measure.id === decision.measure_id)?.name ?? decision.measure_id,
     place: decision.district_id === null ? 'Весь город' : catalog?.districts.find((district) => district.id === decision.district_id)?.name ?? decision.district_id,
   })
+
+  function openIssue(issue: CityIssue) {
+    if (inFlight.current) return
+    setDistrictId(issue.districtId)
+    setIssueKey(`${issue.districtId}:${issue.indicatorId}`)
+  }
+
+  function chooseMeasures(issue: CityIssue) {
+    setDistrictId(issue.districtId)
+    setDirection('')
+    setProblemFilter(issue.indicatorId)
+    setIssueKey(null)
+    document.getElementById('measures-title')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
+
+  function chooseDirection(value: string) {
+    setDirection(value)
+    setProblemFilter('')
+  }
 
   async function runSimulation() {
     if (inFlight.current || !catalog || validation.length) return
@@ -69,6 +100,7 @@ function App() {
     try {
       const response = await simulate(decisions.map(({ measure_id, district_id }) => ({ measure_id, district_id })))
       setRun(response)
+      setMapMode('result')
       setMessages(response.advisor.reply ? [{ role: 'assistant', text: response.advisor.reply }] : [])
       setAdvisorError(response.advisor.error?.message ?? '')
       setChatError(null)
@@ -117,25 +149,35 @@ function App() {
 
         <div className="dashboard">
           <div className="main-column">
-            <section className="panel districts-panel" aria-labelledby="districts-title">
-              <div className="section-heading"><div><p className="eyebrow">01 / ИЗУЧИТЕ ГОРОД</p><h2 id="districts-title">Районы Астаны</h2></div><span className="subtle">Исходные данные</span></div>
-              <div className="district-grid">
-                {catalog?.districts.map((district, index) => <button key={district.id} className={`district-card ${district.id === districtId ? 'selected' : ''}`} aria-pressed={district.id === districtId} disabled={Boolean(busy)} onClick={() => setDistrictId(district.id)}><span className="district-number">0{index + 1}<span aria-hidden="true">↗</span></span><strong>{district.name}</strong><small>{district.population_share !== undefined ? `${number(district.population_share * 100)}% населения` : 'Выбрать район'}</small></button>)}
+            <section className="panel districts-panel map-panel" aria-labelledby="districts-title">
+              <div className="section-heading"><div><p className="eyebrow">01 / ИЗУЧИТЕ ГОРОД</p><h2 id="districts-title"><MapPin size={20} aria-hidden="true" /> Карта Астаны</h2></div><div className="map-mode" aria-label="Данные на карте"><button className={!showForecast ? 'active' : ''} aria-pressed={!showForecast} onClick={() => setMapMode('baseline')}>До решений</button><button className={showForecast ? 'active' : ''} aria-pressed={showForecast} disabled={!Object.keys(finalIndicators).length} onClick={() => setMapMode('result')}>После расчёта</button></div></div>
+              <div className="map-overview-grid">
+                <aside className="city-status" aria-label="Проблемы города">
+                  <p className="eyebrow">СОСТОЯНИЕ ГОРОДА</p>
+                  <div className={`city-alert-count ${issues.length ? 'has-issues' : 'all-clear'}`}>{issues.length ? <TriangleAlert size={24} aria-hidden="true" /> : <CheckCircle2 size={24} aria-hidden="true" />}<strong>{issues.length}</strong><span>критических<br />показателей</span></div>
+                  <p className="city-status-caption">{showForecast ? 'Результат последней симуляции' : 'Исходные показатели районов'}</p>
+                  <div className="city-issue-list">{issues.map((issue) => <button key={`${issue.districtId}:${issue.indicatorId}`} className="city-issue-button" disabled={Boolean(busy)} onClick={() => openIssue(issue)}><span className="city-issue-icon">{issue.indicatorId === 'S1' ? <School size={20} /> : issue.indicatorId === 'S2' ? <Hospital size={20} /> : <DirectionIcon direction={issue.direction} size={20} />}</span><span><strong>{issue.indicatorName}</strong><small>{issue.districtName} · {number(issue.value)} / 100</small></span><ArrowUpRight size={14} aria-hidden="true" /></button>)}</div>
+                  {!issues.length && <p className="city-clear-message">{catalog ? 'Все показатели достигли критического порога. Изучите районы для дальнейшего улучшения.' : 'Загружаем состояние города…'}</p>}
+                  <p className="city-status-hint">Нажмите на значок проблемы, чтобы увидеть детали и подобрать меры.</p>
+                </aside>
+                {catalog ? <CityMap catalog={catalog} selectedDistrictId={districtId} onSelectDistrict={setDistrictId} issues={issues} onOpenIssue={openIssue} decisions={decisions} districtScores={showForecast ? districtScores : asRecord(asRecord(result?.baseline).district_scores)} busy={Boolean(busy)} /> : <div className="map-placeholder" role="status"><MapPin size={40} />Загружаем карту…</div>}
               </div>
-              {selectedDistrict && <div className="district-detail"><div className="district-detail-heading"><h3>{selectedDistrict.name}<span> / показатели района</span></h3><span className="subtle">Шкала 0–100</span></div><div className="indicator-grid">
-                {Object.entries(selectedDistrict.initial_indicators ?? {}).map(([id, value]) => {
+              {showForecast && changed && <p className="map-draft-notice">Карта показывает последний расчёт. Пересчитайте изменённый план, чтобы обновить проблемы.</p>}
+              <div className="district-grid district-picker" aria-label="Выбор района">{catalog?.districts.map((district) => <button key={district.id} className={`district-card ${district.id === districtId ? 'selected' : ''}`} aria-pressed={district.id === districtId} disabled={Boolean(busy)} onClick={() => setDistrictId(district.id)}><MapPin size={14} aria-hidden="true" />{district.name}</button>)}</div>
+              {selectedDistrict && <details className="district-detail map-indicators"><summary>{selectedDistrict.name} — {showForecast ? 'показатели после расчёта' : 'исходные показатели'}</summary><div className="indicator-grid">
+                {Object.entries(displayIndicators).map(([id, value]) => {
+                  if (typeof value !== 'number') return null
                   const indicator = catalog?.indicators?.find((item) => item.id === id)
-                  const critical = value < (catalog?.rules?.critical_threshold_exclusive ?? 40)
-                  return <div className={`indicator ${critical ? 'critical' : ''}`} key={id} title={indicator?.meaning}><div><span>{indicator?.name ?? id}</span><strong>{number(value)}</strong></div><div className="indicator-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>
+                  const issue = issues.find((item) => item.districtId === districtId && item.indicatorId === id)
+                  return <div className={`indicator ${issue ? 'critical' : ''}`} key={id} title={indicator?.meaning}><div><span>{indicator?.name ?? id}</span>{issue ? <button className="indicator-issue" onClick={() => openIssue(issue)} aria-label={`Проблема: ${indicator?.name ?? id}`}><TriangleAlert size={13} />{number(value)}</button> : <strong>{number(value)}</strong>}</div><div className="indicator-track" aria-hidden="true"><span style={{ width: `${Math.min(100, Math.max(0, value))}%` }} /></div></div>
                 })}
-                {!Object.keys(selectedDistrict.initial_indicators ?? {}).length && <p className="subtle">Для этого района нет исходных показателей.</p>}
-              </div></div>}
-              {catalog?.rules?.critical_threshold_exclusive !== undefined && <p className="legend"><span />Показатель ниже {catalog.rules.critical_threshold_exclusive} требует внимания</p>}
+              </div></details>}
             </section>
 
             <section className="panel measures-panel" aria-labelledby="measures-title">
               <div className="section-heading"><div><p className="eyebrow">02 / СОБЕРИТЕ ПЛАН</p><h2 id="measures-title">Меры развития</h2></div><span className="count-badge">{catalog?.measures.length ?? '—'} мер</span></div>
-              <div className="direction-filters" aria-label="Фильтр по направлению"><button className={!direction ? 'active' : ''} aria-pressed={!direction} disabled={Boolean(busy)} onClick={() => setDirection('')}>Все направления</button>{directions.map((item) => <button key={item} className={direction === item ? 'active' : ''} aria-pressed={direction === item} disabled={Boolean(busy)} onClick={() => setDirection(item)}>{item}</button>)}</div>
+              <div className="direction-filters" aria-label="Фильтр по направлению"><button className={!direction ? 'active' : ''} aria-pressed={!direction} disabled={Boolean(busy)} onClick={() => chooseDirection('')}><DirectionIcon />Все направления</button>{directions.map((item) => <button key={item} className={direction === item ? 'active' : ''} aria-pressed={direction === item} disabled={Boolean(busy)} onClick={() => chooseDirection(item)}><DirectionIcon direction={item} />{item}</button>)}</div>
+              {problemFilter && <div className="problem-filter"><TriangleAlert size={16} /><span>Меры для показателя: <strong>{catalog?.indicators?.find((item) => item.id === problemFilter)?.name ?? problemFilter}</strong></span><button onClick={() => setProblemFilter('')} aria-label="Сбросить фильтр проблемы"><X size={16} /></button></div>}
               <p className="target-hint">Районные меры будут добавлены в <strong>{selectedDistrict?.name ?? 'выбранный район'}</strong>. Городские меры действуют на весь город.</p>
               <div className="measure-grid">
                 {measures.map((measure) => {
@@ -143,10 +185,10 @@ function App() {
                   const reason = catalog ? canAddDecision(catalog, decisions, decision) : null
                   const added = decisions.some((item) => item.measure_id === measure.id)
                   return <article className={`measure-card ${added ? 'is-added' : ''}`} key={measure.id}>
-                    <div className="measure-topline"><span className="direction-label">{measure.direction ?? 'Развитие города'}</span><span className="measure-cost">{number(measure.cost)} <small>ед.</small></span></div>
-                    <h3>{measure.name}</h3><p className="measure-scope">{measure.scope === 'city' ? '◎ Весь город' : `◈ ${selectedDistrict?.name ?? 'Район'}`}{measure.lag !== undefined && <span>Эффект через {measure.lag} кв.</span>}</p>
+                    <div className="measure-topline"><span className="direction-label"><DirectionIcon direction={measure.direction} size={16} />{measure.direction ?? 'Развитие города'}</span><span className="measure-cost">{number(measure.cost)} <small>ед.</small></span></div>
+                    <h3>{measure.name}</h3><p className="measure-scope"><MapPin size={13} aria-hidden="true" />{measure.scope === 'city' ? 'Весь город' : selectedDistrict?.name ?? 'Район'}{measure.lag !== undefined && <span><Clock3 size={12} aria-hidden="true" />Эффект через {measure.lag} кв.</span>}</p>
                     {measure.full_effects && <div className="effects" aria-label="Полный эффект меры"><span className="effects-label">Полный эффект</span>{Object.entries(measure.full_effects).map(([id, value]) => <span key={id} className={value < 0 ? 'negative' : ''} title={catalog?.indicators?.find((item) => item.id === id)?.name}>{id} {value > 0 ? '+' : ''}{number(value)}</span>)}</div>}
-                    <button className={`add-button ${added ? 'added' : ''}`} disabled={Boolean(busy) || Boolean(reason)} title={reason ?? undefined} onClick={() => { if (!inFlight.current && catalog && !canAddDecision(catalog, decisions, decision)) { setDecisions((previous) => [...previous, decision]); setSimulationError('') } }}>{added ? '✓ Добавлено в план' : '+ Добавить в план'}</button>
+                    <button className={`add-button ${added ? 'added' : ''}`} disabled={Boolean(busy) || Boolean(reason)} title={reason ?? undefined} onClick={() => { if (!inFlight.current && catalog && !canAddDecision(catalog, decisions, decision)) { setDecisions((previous) => [...previous, decision]); setSimulationError('') } }}>{added ? <><Check size={16} />Добавлено в план</> : <><Plus size={16} />Добавить в план</>}</button>
                     {reason && !added && <p className="restriction">{reason}</p>}
                   </article>
                 })}
@@ -174,7 +216,7 @@ function App() {
             <section className="panel plan-panel" aria-labelledby="plan-title">
               <div className="section-heading"><h2 id="plan-title">Ваш план</h2><span className="count-badge">{decisions.length} / {decisionCount}</span></div>
               <div className="budget-header"><span>Бюджет развития</span><strong>{number(cost)} <small>/ {number(budget)}</small></strong></div><div className="budget-track" role="progressbar" aria-label="Использовано бюджета" aria-valuemin={0} aria-valuemax={budget} aria-valuenow={cost}><span style={{ width: `${budget > 0 ? Math.min(100, cost / budget * 100) : 0}%` }} /></div><p className="budget-remaining">Доступно ещё <strong>{number(budget - cost)} ед.</strong></p>
-              <ol className="plan-list">{decisions.map((decision, index) => { const item = describeDecision(decision); const measure = catalog?.measures.find((candidate) => candidate.id === decision.measure_id); return <li key={`${decision.measure_id}-${decision.district_id}`}><span className="plan-number">{index + 1}</span><div><strong>{item.name}</strong><small>{item.place} <span>· {number(measure?.cost ?? 0)} ед.</span></small></div><button className="remove-button" disabled={Boolean(busy)} aria-label={`Удалить: ${item.name}`} onClick={() => { setDecisions((previous) => previous.filter((_, position) => index !== position)); setSimulationError('') }}>×</button></li> })}{Array.from({ length: Math.max(0, decisionCount - decisions.length) }, (_, index) => <li className="empty-slot" key={`empty-${index}`}><span className="plan-number">{decisions.length + index + 1}</span><span>Добавьте решение</span></li>)}</ol>
+              <ol className="plan-list">{decisions.map((decision, index) => { const item = describeDecision(decision); const measure = catalog?.measures.find((candidate) => candidate.id === decision.measure_id); return <li key={`${decision.measure_id}-${decision.district_id}`}><span className="plan-number">{index + 1}</span><div><strong>{item.name}</strong><small>{item.place} <span>· {number(measure?.cost ?? 0)} ед.</span></small></div><button className="remove-button" disabled={Boolean(busy)} aria-label={`Удалить: ${item.name}`} onClick={() => { setDecisions((previous) => previous.filter((_, position) => index !== position)); setSimulationError('') }}><X size={16} aria-hidden="true" /></button></li> })}{Array.from({ length: Math.max(0, decisionCount - decisions.length) }, (_, index) => <li className="empty-slot" key={`empty-${index}`}><span className="plan-number">{decisions.length + index + 1}</span><span>Добавьте решение</span></li>)}</ol>
               <div className="plan-rules"><p>{decisionCount} решений · бюджет до {number(budget)} ед.</p>{catalog?.rules?.max_per_direction !== undefined && <p>Не больше {catalog.rules.max_per_direction} мер на направление</p>}</div>
               {decisions.length > 0 && validation.length > 0 && <ul className="validation-list" aria-live="polite">{validation.map((issue) => <li key={issue}>{issue}</li>)}</ul>}
               {simulationError && <p className="notice error" role="alert">{simulationError}</p>}
@@ -183,7 +225,7 @@ function App() {
             </section>
 
             <section className="panel advisor-panel" aria-labelledby="advisor-title">
-              <div className="section-heading"><div className="advisor-heading"><span className="advisor-symbol" aria-hidden="true">✦</span><div><h2 id="advisor-title">Советник</h2><p>Помощник по развитию города</p></div></div></div>
+              <div className="section-heading"><div className="advisor-heading"><span className="advisor-symbol" aria-hidden="true"><Sparkles size={23} /></span><div><h2 id="advisor-title">Советник</h2><p>Помощник по развитию города</p></div></div></div>
               <div className="conversation" role="log" aria-live="polite" aria-label="Разговор с советником">
                 {messages.length === 0 && <div className="advisor-welcome"><p>С чего начнём?</p><span>Спросите о районах, выборе мер или результатах симуляции.</span></div>}
                 {messages.map((item, index) => <div key={index} className={`chat-message ${item.role}`}><span className="chat-role">{item.role === 'assistant' ? 'СОВЕТНИК' : 'ВЫ'}</span><p>{item.text}</p></div>)}
@@ -193,12 +235,13 @@ function App() {
               {advisorError && <div className="notice warning" role="alert"><p>Результат сохранён. Объяснение советника недоступно: {advisorError}</p><button className="text-button" disabled={Boolean(busy)} onClick={() => void sendMessage('Объясни результаты последней симуляции и предложи, как улучшить решения.')}>Повторить объяснение</button></div>}
               {chatError && <div className="notice error" role="alert"><p>{chatError.text}</p><button className="text-button" disabled={Boolean(busy)} onClick={() => void sendMessage(chatError.request)}>Повторить сообщение</button></div>}
               {changed && <p className="advisor-context">Советник видит последний рассчитанный план. Изменения появятся после новой симуляции.</p>}
-              <form className="chat-form" onSubmit={(event) => { event.preventDefault(); void sendMessage() }}><label className="sr-only" htmlFor="advisor-message">Сообщение советнику</label><textarea id="advisor-message" value={message} disabled={Boolean(busy) || loading} onChange={(event) => setMessage(event.target.value)} placeholder="Как улучшить мой город?" rows={3} aria-describedby="message-limit" /><div className="chat-form-bottom"><span id="message-limit" className={message.length > 4000 ? 'over-limit' : ''}>{message.length} / 4000</span><button type="submit" className="send-button" disabled={Boolean(busy) || loading || !message.trim() || message.length > 4000} aria-label="Отправить сообщение">Отправить <span aria-hidden="true">↑</span></button></div></form>
+              <form className="chat-form" onSubmit={(event) => { event.preventDefault(); void sendMessage() }}><label className="sr-only" htmlFor="advisor-message">Сообщение советнику</label><textarea id="advisor-message" value={message} disabled={Boolean(busy) || loading} onChange={(event) => setMessage(event.target.value)} placeholder="Как улучшить мой город?" rows={3} aria-describedby="message-limit" /><div className="chat-form-bottom"><span id="message-limit" className={message.length > 4000 ? 'over-limit' : ''}>{message.length} / 4000</span><button type="submit" className="send-button" disabled={Boolean(busy) || loading || !message.trim() || message.length > 4000} aria-label="Отправить сообщение">Отправить <Send size={14} aria-hidden="true" /></button></div></form>
             </section>
           </aside>
         </div>
         <footer className="page-footer"><span>ASTANA CITY CONTROL</span><span>Каждое решение меняет город.</span></footer>
       </main>
+      {catalog && <ProblemDialog issue={activeIssue} catalog={catalog} busy={Boolean(busy)} onClose={() => setIssueKey(null)} onChooseMeasures={chooseMeasures} />}
     </div>
   )
 }

@@ -163,3 +163,46 @@ h3 { font-size: 14px; font-weight: 600; }
 .result-table tbody tr:hover { background: #1a2b3980; }
 .result-table td small { color: #91b3a8; font-size: 9px; }
 @media (max-width:600px) { .result-table th, .result-table td { padding: 8px 9px; font-size: 9px; } }
+
+/* Map overview and problem interactions. */
+.map-panel { padding: 18px; background: #0d1823; }
+.map-panel h2 { display: flex; align-items: center; gap: 8px; }
+.map-overview-grid { display: grid; grid-template-columns: 205px minmax(0,1fr); gap: 12px; }
+.city-status { background: #101f2b; border: 1px solid #263b48; border-radius: 10px; padding: 16px 12px; }
+.city-alert-count { display: flex; align-items: center; gap: 9px; margin: 16px 0 10px; }
+.city-alert-count strong { font-size: 36px; line-height: 1; }
+.city-alert-count span { font-size: 11px; color: #b2c4d0; line-height: 1.4; }
+.has-issues { color: #fb977e; } .all-clear { color: #68ddbc; }
+.city-status-caption,.city-status-hint,.city-clear-message { font-size: 11px; color: #99b0c1; line-height: 1.6; }
+.city-status-hint { margin-top: 16px; }
+.city-issue-list { display: grid; gap: 8px; margin-top: 18px; }
+.city-issue-button { display: flex; gap: 8px; align-items: center; text-align: left; padding: 10px 7px; border: 1px solid #55423e; background: #2b2428; border-radius: 8px; }
+.city-issue-button > span:nth-child(2) { flex: 1; }
+.city-issue-icon { color: #ffad91; }
+.city-issue-button strong { font-size: 11px; display: block; font-weight: 550; }
+.city-issue-button small { font-size: 10px; display: block; color: #c5a499; margin-top: 4px; }
+.map-mode { display: flex; gap: 4px; padding: 3px; border: 1px solid #2b404e; border-radius: 7px; }
+.map-mode button { border: 0; background: transparent; font-size: 11px; padding: 7px 9px; border-radius: 5px; }
+.map-mode .active { background: #204846; color: #9bf2d9; }
+.map-placeholder { min-height: 440px; display: grid; place-content: center; justify-items: center; gap: 16px; color: #819bac; }
+.district-picker { display: flex; flex-wrap: wrap; margin-top: 12px; gap: 7px; }
+.district-picker .district-card { display: flex; align-items: center; gap: 6px; font-size: 11px; padding: 7px 10px; }
+.map-indicators { margin-top: 15px; padding-top: 12px; }
+.map-indicators summary { cursor: pointer; font-size: 12px; color: #a9c8d4; }
+.map-indicators .indicator-grid { margin-top: 18px; }
+.map-draft-notice { font-size: 11px; color: #e0b889; margin-top: 12px; }
+.indicator-issue { display: inline-flex; align-items: center; gap: 5px; padding: 1px 4px; border: 0; background: #453228; color: #ffb293; border-radius: 4px; font-size: 12px; }
+.direction-filters button,.direction-label,.add-button,.send-button { display: inline-flex; align-items: center; justify-content: center; gap: 7px; }
+.direction-label { justify-content: flex-start; }
+.direction-filters button { padding: 10px 12px; font-size: 11px; }
+.direction-filters button:nth-child(3) svg { color: #83d6a3; }
+.direction-filters button:nth-child(4) svg { color: #d4a3ce; }
+.direction-filters button:nth-child(5) svg { color: #f2ad92; }
+.direction-filters button:nth-child(6) svg { color: #91c4e5; }
+.measure-scope { align-items: center; }
+.measure-scope > span { display: inline-flex; align-items: center; gap: 4px; }
+.problem-filter { margin-top: 15px; display: flex; align-items: center; gap: 9px; padding: 10px 12px; background: #342d25; border: 1px solid #695136; color: #edc39d; border-radius: 7px; font-size: 12px; }
+.problem-filter span { flex: 1; }
+.problem-filter button { border: 0; padding: 4px; display: grid; place-items: center; background: transparent; }
+@media (max-width:1200px) { .map-overview-grid { grid-template-columns: minmax(0,1fr); } .city-status { display: grid; grid-template-columns: 145px minmax(0,1fr); gap: 8px 12px; padding: 12px; } .city-status > .eyebrow { grid-column: 1 / -1; margin: 0; } .city-alert-count { margin: 0; } .city-issue-list { margin: 0; grid-column: 2; grid-row: 2 / 4; } .city-status-caption { grid-column: 1; } .city-status-hint { grid-column: 1 / -1; margin: 0; } }
+@media (max-width:600px) { .map-panel { padding: 12px; } .map-panel .section-heading { align-items: flex-start; flex-direction: column; gap: 12px; } .map-mode { align-self: stretch; } .map-mode button { flex: 1; } .city-status { grid-template-columns: 100px minmax(0,1fr); } .city-alert-count { flex-wrap: wrap; gap: 5px; } .city-alert-count span { font-size: 10px; } .city-issue-button strong { font-size: 10px; } .district-picker .district-card { font-size: 11px; padding: 8px; } }
