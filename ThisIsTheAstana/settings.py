@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'game_api',
 ]
 
 MIDDLEWARE = [
@@ -125,3 +127,12 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+# Team modules expose the callable interfaces documented in docs/api.md.
+GAME_CATALOG_PROVIDER = os.environ.get('GAME_CATALOG_PROVIDER', '')
+GAME_SIMULATION_PROVIDER = os.environ.get('GAME_SIMULATION_PROVIDER', '')
+ADVISOR_REPLY_PROVIDER = os.environ.get('ADVISOR_REPLY_PROVIDER', '')
+
+# Player history and authoritative simulation results stay on the server.
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+CSRF_FAILURE_VIEW = 'game_api.views.csrf_failure'
