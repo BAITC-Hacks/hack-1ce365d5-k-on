@@ -13,8 +13,13 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Local development configuration; deployed process settings take precedence.
+load_dotenv(BASE_DIR / '.env', override=False)
 
 
 # Quick-start development settings - unsuitable for production
@@ -130,7 +135,7 @@ MAILERS = {
 
 # Team modules expose the callable interfaces documented in docs/api.md.
 GAME_CATALOG_PROVIDER = os.environ.get('GAME_CATALOG_PROVIDER', 'akim_ai.agent.load_catalog')
-GAME_SIMULATION_PROVIDER = os.environ.get('GAME_SIMULATION_PROVIDER', '')
+GAME_SIMULATION_PROVIDER = os.environ.get('GAME_SIMULATION_PROVIDER') or 'game_api.engine.simulate'
 ADVISOR_REPLY_PROVIDER = os.environ.get('ADVISOR_REPLY_PROVIDER', 'game_api.integrations.reply')
 AKIM_AI_PROVIDER = os.environ.get('AKIM_AI_PROVIDER', 'openai')
 

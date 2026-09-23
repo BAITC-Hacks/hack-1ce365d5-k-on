@@ -8,32 +8,33 @@ works immediately; real chat uses AKIM_AI_PROVIDER=openai and requires OPENAI_AP
 and OPENAI_MODEL in the server environment. For an explicitly scripted offline chat,
 start the server with AKIM_AI_PROVIDER=demo. Demo replies are labeled in the reply text.
 
-The scoring engine remains the teammate's responsibility. /api/simulate returns
-HTTP 503 until GAME_SIMULATION_PROVIDER is configured.
+The built-in scoring engine is connected by default as game_api.engine.simulate.
+Its calculation rules and documented assumptions are in [engine.md](engine.md).
 
 ## Connect the team modules
 
-Set these environment variables before starting Django (or set them in settings.py):
+Set these in the process environment or repository .env before starting Django:
 
 | Setting | Example dotted callable path | Python interface |
 | --- | --- | --- |
 | GAME_CATALOG_PROVIDER | akim_ai.agent.load_catalog (default) | get_catalog() -> dict |
-| GAME_SIMULATION_PROVIDER | engine.api.simulate | simulate(*, decisions: list[dict]) -> dict |
+| GAME_SIMULATION_PROVIDER | game_api.engine.simulate (default) | simulate(*, decisions: list[dict]) -> dict |
 | ADVISOR_REPLY_PROVIDER | game_api.integrations.reply (default) | reply(*, message: str, history: list[dict], simulation: dict \| None) -> str |
 
-Catalog and Advisor paths above are working defaults. The engine path is an example.
-Django does not automatically load a .env file.
+All three paths above are working defaults. Django loads the repository .env with
+process environment values taking precedence. An empty GAME_SIMULATION_PROVIDER
+also selects the built-in engine.
 
 The catalog provider must return the structure below, using the team's agreed IDs.
-The engine receives five validated decisions and must enforce game rules such as
-budget and incompatible measures. For a game-rule violation, raise
+The engine receives five schema-validated decisions and enforces game rules such
+as budget and incompatible measures. For a game-rule violation, raise
 game_api.errors.SimulationRejected("Player-facing explanation"); Django returns
 HTTP 400 with code invalid_decisions and preserves the previous run.
 Its result must be a plain JSON object with finite numbers. The connected Advisor
 requires valid: true and a finite numeric score; the API does not invent either.
 Additional result fields are preserved. The real catalog also forbids repeating a
 measure across districts, limits each direction to two measures, and defines budget
-and conflict rules. The engine must enforce these before returning valid: true.
+and conflict rules. The built-in engine enforces these before returning valid: true.
 
 The Advisor receives:
 - message: the current question, separate from history;
@@ -155,7 +156,7 @@ Response shape (the decisions array contains all five submitted choices):
 {
   "simulation": {
     "decisions": [the five validated decisions],
-    "result": {the engine's JSON result, unchanged}
+    "result": {the engine's JSON result, unchanged; see docs/engine.md}
   },
   "advisor": {"reply": "The Advisor's explanation"}
 }
@@ -195,8 +196,7 @@ Never send score, history, simulation, or a player/session ID in the request bod
 ## React integration
 
 Serve React and /api on the same origin. During development, configure the React
-dev server to proxy /api to http://127.0.0.1:8000. For example, merge this into the
-existing Vite configuration:
+dev server to proxy /api to http://127.0.0.1:8000. The merged Vite configuration already includes this for development and preview:
 
 ```js
 server: {
@@ -262,3 +262,13 @@ API errors use {"error": {"code": "...", "message": "..."}}.
 
 Unexpected provider details stay in server logs. HTTP 200 from /api/simulate can
 include advisor.error; always inspect that field before displaying the explanation.
+
+## Connected frontend
+
+The React app uses `src/api.ts` for cookie/CSRF-aware requests and `src/planning.ts`
+for immediate plan feedback. The Python engine remains authoritative. Requests
+for simulation and chat are serialized by the UI; a failed simulation preserves
+the previous result and conversation. Draft changes are marked separately from
+the last calculated plan. A successful engine result remains visible even when
+the Advisor fails. The initial district overview comes from catalog data, and
+calculated scores come only from the engine.

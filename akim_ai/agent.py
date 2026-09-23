@@ -13,7 +13,7 @@ def load_catalog():
 
 
 def check_selection(decisions, catalog, complete=True):
-    """Advisory checks only; the future engine remains authoritative."""
+    """Advisory checks only; the server engine remains authoritative."""
     try:
         validate(decisions, array(DECISION, 5))
     except ValueError as exc:
