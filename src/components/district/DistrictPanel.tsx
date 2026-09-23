@@ -3,7 +3,6 @@ import { ArrowUpRight, ArrowRight, X, MapPin, AlertTriangle, ScanLine } from 'lu
 import { useCityStore } from '../../store/cityStore'
 import { directions } from '../../data/presentation'
 import { IndicatorBar } from './IndicatorBar'
-import { Budget } from '../hud/Budget'
 
 export function DistrictPanel({ openMeasures }: { openMeasures: () => void }) {
   const selected = useCityStore((s) => s.selectedDistrict)
@@ -25,6 +24,5 @@ export function DistrictPanel({ openMeasures }: { openMeasures: () => void }) {
       <button className="secondary-button" onClick={openMeasures}>Все мероприятия <ArrowUpRight size={16} /></button>
       <div className="mission-note">Качество жизни — это не только средний балл, но и состояние самого уязвимого района.</div>
     </>}
-    <Budget />
   </motion.aside>
 }

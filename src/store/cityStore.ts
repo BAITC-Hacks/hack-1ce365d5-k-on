@@ -23,7 +23,7 @@ interface CityState {
   initialize: () => Promise<void>
   selectDistrict: (id: DistrictId | null) => void
   selectMeasure: (id: string | null) => void
-  addDecision: (decision: Decision) => void
+  addDecision: (decision: Decision) => Promise<void>
   removeDecision: (id: string) => void
   clearDecisions: () => void
   refreshValidation: () => Promise<void>
@@ -52,11 +52,22 @@ export const useCityStore = create<CityState>((set, get) => ({
   },
   selectDistrict: (id) => set({ selectedDistrict: id, selectedMeasure: null }),
   selectMeasure: (id) => set({ selectedMeasure: id }),
-  addDecision: (decision) => {
-    const { decisions, isSimulating } = get()
-    if (isSimulating || decisions.length >= 5 || decisions.some((item) => item.id === decision.id)) return
-    set({ decisions: [...decisions, decision], selectedMeasure: null, error: null })
-    void get().refreshValidation()
+  addDecision: async (decision) => {
+    const { decisions, isSimulating, isValidating } = get()
+    if (isSimulating || isValidating || decisions.length >= 5 || decisions.some((item) => item.id === decision.id)) return
+    const version = ++validationVersion
+    const next = [...decisions, decision]
+    set({ isValidating: true, error: null })
+    try {
+      const validation = await api.validateDecisions({ decisions: next })
+      if (version !== validationVersion) return
+      const issues = validation.issues.filter((issue) => issue.code !== 'count')
+      if (issues.length) {
+        set({ error: issues.map((issue) => issue.message).join(' '), isValidating: false })
+        return
+      }
+      set({ decisions: next, selectedMeasure: null, validation, budget: validation.budget, isValidating: false })
+    } catch (error) { if (version === validationVersion) set({ error: errorMessage(error), isValidating: false }) }
   },
   removeDecision: (id) => {
     if (get().isSimulating) return

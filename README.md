@@ -1,32 +1,53 @@
-# React + TypeScript + Vite
+# Аким на 5 часов · Astana City Control
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Frontend интерактивного симулятора: React + Vite + strict TypeScript, Zustand, Framer Motion, lucide-react, обычный CSS.
 
-Currently, two official plugins are available:
+## Запуск
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm run dev
+npm run build
+npm run lint
+npm test
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Зависимости уже установлены. Приложение по умолчанию полностью работает без backend.
+
+## Что реализовано
+
+Наклонная 2.5D-карта с семью независимыми слоями, zoom/pan/reset, переключением 2D/2.5D и слоёв; пять кликабельных районов; десять исходных индикаторов района; каталог M1–M14 из датасета; подтверждение меры; очередь пяти решений; бюджет; проверка ограничений; экран результата и аналитический отчёт. На узком экране панель района становится bottom sheet. Анимации учитывают reduced motion.
+
+## API и граница расчётов
+
+UI → Zustand → `src/api/client.ts` → mock либо HTTP.
+
+- Компоненты и store не вычисляют AQOL, эффекты, синергии или штрафы.
+- `src/api/mock.ts` имитирует серверную проверку: ровно 5 мер, повторы, районы, ≤2 на направление, бюджет 100 и все три несовместимости.
+- Предложение проверяется API до добавления в план. Невалидная мера отклоняется с объяснением.
+- Бюджет приходит в ответе API, UI только отображает числа и длину полосы.
+- Демо-результат **фиксированный**, это не deterministic engine. Значения эффектов, district impact и AI-объяснение — помеченные демонстрационные fixtures, не предсказание результата произвольного набора.
+- AI ничего не генерирует в браузере. Mock возвращает подготовленное объяснение.
+- Для настоящих результатов нужны backend engine и endpoint анализа.
+
+Для подключения HTTP задайте `VITE_API_BASE_URL` в локальном env-файле по образцу `.env.example` и перезапустите Vite. Контракты: `src/api/contract.ts` и `src/types/city.ts`.
+
+| Метод | Endpoint | Ответ |
+| --- | --- | --- |
+| GET | /overview | CityOverview |
+| GET | /districts | District[] |
+| GET | /measures | Measure[] |
+| POST | /decisions/validate | ValidationResult |
+| POST | /simulate | SimulationResult |
+| GET | /simulations/:id/analysis | AiAnalysis |
+
+Оба POST получают только `{ decisions: [{ id, district? }] }`. Районы в payload: Esil, Almaty, Saryarka, Baikonur, Nura. Для общегородских мер district отсутствует. ValidationResult содержит budget и issues с code/message; неполный черновик возвращает issue с code=count. HTTP ошибки и ошибки анализа отображаются отдельно, анализ можно загрузить повторно.
+
+## Исходные материалы
+
+Данные районов и каталог — `src/data/`. Веса и формулы движка в frontend не перенесены. Меры используют реальные стоимости и лаги из предоставленного синтетического датасета. Стартовый AQOL 52.56 передаётся как готовая константа API.
+
+Описание атласов, наложения и ограничения географии — [ASSETS.md](./ASSETS.md). Карта иллюстративная: входной overlay содержит шесть зон и не совпадает географически с подложкой. Для точных пяти границ нужен зарегистрированный комплект ассетов.
+
+## Проверки
+
+`npm test` проверяет каталог, бюджет 95 в примере M7/M8/M10 в Nura + M12 + M5 в Saryarka, 11 невалидных случаев, конфликты, очистку payload, отклонение конфликтной меры в store и получение демо-результата. Формулу AQOL эти тесты не проверяют: она принадлежит backend.
