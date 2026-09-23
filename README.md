@@ -5,3 +5,4 @@ Curently choosed "Спец-трек Astana Innovations"
 Roles:
 Erasyl: Engine
 Temirlan: Ai logic
+Miras: Designer
