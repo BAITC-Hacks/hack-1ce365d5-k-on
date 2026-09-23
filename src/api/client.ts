@@ -29,7 +29,10 @@ const httpApi: CityApi = {
   getAiAnalysis: (id) => request(`/simulations/${encodeURIComponent(id)}/analysis`),
 }
 
-const client: CityApi = baseUrl ? httpApi : mockApi
+// The isolated layout editor always uses demo fixtures: no backend access or
+// user decisions are needed just to arrange the actual interface.
+const layoutPreview = typeof window !== 'undefined' && window.parent !== window && new URLSearchParams(window.location.search).get('layoutStudio') === '1'
+const client: CityApi = baseUrl && !layoutPreview ? httpApi : mockApi
 export const getOverview = () => client.getOverview()
 export const getDistricts = () => client.getDistricts()
 export const getMeasures = () => client.getMeasures()

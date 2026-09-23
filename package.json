@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "studio": "vite --port 5174 --open /studio.html",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "test": "node scripts/check-mock.mjs",
+    "test:studio": "node scripts/check-studio.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
