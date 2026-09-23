@@ -4,3 +4,4 @@ Hackathon team repository for K-On!
 Curently choosed "Спец-трек Astana Innovations"
 Roles:
 Erasyl: Engine
+Temirlan: Ai logic
