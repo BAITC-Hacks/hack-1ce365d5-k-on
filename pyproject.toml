@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "akim-advisor"
+version = "0.2.0"
+description = "Russian-language AI adviser for the Akim educational simulator"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+akim-advisor = "akim_ai.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["akim_ai*"]
+
+[tool.setuptools.package-data]
+akim_ai = ["catalog.json"]

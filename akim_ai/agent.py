@@ -4,7 +4,7 @@ from copy import deepcopy
 import json
 from pathlib import Path
 
-from .contracts import BRIEF, PLAN, DECISION, array, validate, finite_number
+from .contracts import BRIEF, PLAN, DECISION, CONVERSATION, array, validate, finite_number
 from .prompts import PLANNER, EXPLAINER
 
 
@@ -19,16 +19,22 @@ def check_selection(decisions, catalog, complete=True):
     except ValueError as exc:
         return [str(exc)]
     errors = []
-    if complete and len(decisions) != 5:
-        errors.append("Нужно выбрать ровно пять мер.")
+    if complete and len(decisions) != catalog["rules"]["decision_count"]:
+        errors.append(f"Нужно выбрать ровно {catalog['rules']['decision_count']} мер.")
     measures = {m["id"]: m for m in catalog["measures"]}
     ids = [d["measure_id"] for d in decisions]
+    districts = {d["id"] for d in catalog["districts"]}
+    if any(i not in measures for i in ids):
+        return ["Мера отсутствует в каталоге."]
+    if any(d["district_id"] is not None and d["district_id"] not in districts for d in decisions):
+        return ["Район отсутствует в каталоге."]
     if len(set(ids)) != len(ids):
         errors.append("Одна мера выбрана несколько раз.")
     if sum(measures[i]["cost"] for i in ids) > catalog["rules"]["budget"]:
         errors.append("Превышен бюджет.")
-    if any(n > 2 for n in Counter(measures[i]["direction"] for i in ids).values()):
-        errors.append("Больше двух мер одного направления.")
+    maximum = catalog["rules"]["max_per_direction"]
+    if any(n > maximum for n in Counter(measures[i]["direction"] for i in ids).values()):
+        errors.append(f"Больше {maximum} мер одного направления.")
     for d in decisions:
         if (measures[d["measure_id"]]["scope"] == "city") != (d["district_id"] is None):
             errors.append(f"Неверно указан район для {d['measure_id']}.")
@@ -52,14 +58,21 @@ class Advisor:
         # simulator({decisions: [...]}) -> engine result; inject only server-side.
         self.model = model
         self.simulator = simulator
-        self.catalog = catalog or load_catalog()
+        self.catalog = deepcopy(catalog) if catalog is not None else load_catalog()
 
-    def run(self, question, decisions=None, *, suggest=False, simulation=None):
+    def run(self, question, decisions=None, *, suggest=False, simulation=None, conversation=None):
         decisions = deepcopy(decisions if decisions is not None else [])
         output = {"status": "ok", "mode": "consult", "briefing": None,
                   "simulation": None, "candidates": [], "warnings": [], "evidence": {}}
         if not isinstance(question, str) or not question.strip() or len(question) > 4000:
             return {**output, "status": "invalid_input", "errors": ["Нужен вопрос длиной до 4000 символов."]}
+        if type(suggest) is not bool:
+            return {**output, "status": "invalid_input", "errors": ["suggest должен быть true или false."]}
+        if conversation is not None:
+            try:
+                validate(conversation, CONVERSATION)
+            except ValueError:
+                return {**output, "status": "invalid_input", "errors": ["Некорректная история диалога."]}
         errors = check_selection(decisions, self.catalog, complete=False)
         if errors:
             return {**output, "status": "invalid_input", "errors": errors}
@@ -78,6 +91,8 @@ class Advisor:
                 evidence[item["id"]] = item
         if simulation is not None:
             evidence["current_result"] = deepcopy(simulation)
+        if conversation is not None:
+            evidence["conversation"] = deepcopy(conversation)
         payload = {"question": question, "decisions": decisions, "mode": output["mode"],
                    "evidence": evidence, "simulator_available": self.simulator is not None}
         if suggest:
@@ -94,10 +109,12 @@ class Advisor:
                     checked["id"] = f"candidate_{len(output['candidates']) + 1}"
                     output["candidates"].append(checked)
                     evidence[checked["id"]] = deepcopy(checked)
-            except Exception:
+            except Exception as exc:
                 # Do not expose raw provider errors, credentials, or request bodies.
                 output["warnings"].append("Не удалось подготовить варианты. Попробуйте ещё раз.")
-        payload["checks"] = output["candidates"]
+                if getattr(exc, "public_message", None):
+                    output["warnings"].append(exc.public_message)
+        # Candidate facts already live in evidence; transmit each result only once.
         try:
             brief = self.model.generate("brief", EXPLAINER, deepcopy(payload), BRIEF)
             validate(brief, BRIEF)
@@ -105,9 +122,11 @@ class Advisor:
                 if not statement["evidence_ids"] or any(k not in evidence for k in statement["evidence_ids"]):
                     raise ValueError("Missing or unknown evidence reference")
             output["briefing"] = brief
-        except Exception:
+        except Exception as exc:
             output["status"] = "unavailable"
             output["warnings"].append("AI-объяснение недоступно. Данные расчёта сохранены.")
+            if getattr(exc, "public_message", None) and exc.public_message not in output["warnings"]:
+                output["warnings"].append(exc.public_message)
         output["evidence"] = deepcopy(evidence)
         return output
 

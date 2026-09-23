@@ -1,4 +1,14 @@
 .env
+.env.*
+!.env.example
+.sessions/
 __pycache__/
 *.pyc
 .venv/
+build/
+dist/
+*.egg-info/
+.coverage
+htmlcov/
+.ruff_cache/
+*.lock

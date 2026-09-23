@@ -24,6 +24,15 @@ PLAN = obj({"candidates": array(obj({
 STATEMENT = obj({"text": TEXT, "evidence_ids": array({"type": "string"}, 12)})
 BRIEF = obj({"summary": STATEMENT, "strengths": array(STATEMENT, 3),
              "risks": array(STATEMENT, 3), "next_step": TEXT})
+CONVERSATION = obj({
+    "priority": {"type": "string", "maxLength": 500},
+    "history": array(obj({
+        "role": {"type": "string", "enum": ["user", "assistant"]},
+        "content": {"type": "string", "maxLength": 14000},
+    }), 24),
+    "previous_candidates": array(obj({"id": {"type": "string"},
+        "reason": TEXT, "decisions": FIVE_DECISIONS}), 3),
+})
 
 
 def validate(value, schema, path="$"):
@@ -51,4 +60,4 @@ def validate(value, schema, path="$"):
 
 
 def finite_number(value):
-    return type(value) in (int, float) and math.isfinite(value)
+    return type(value) is int or (type(value) is float and math.isfinite(value))

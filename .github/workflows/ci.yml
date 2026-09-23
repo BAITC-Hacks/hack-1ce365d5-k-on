@@ -1,0 +1,40 @@
+name: Python checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Tests without API credentials
+        run: python -m unittest discover -s tests -v
+      - name: Build distribution
+        run: python -m pip wheel --no-deps --wheel-dir dist .
+      - name: Install distribution
+        run: python -m pip install --no-deps dist/*.whl
+      - name: Verify installed package outside source tree
+        working-directory: ${{ runner.temp }}
+        run: |
+          akim-advisor --provider demo --check-config
+          python -c 'from akim_ai import Advisor; from akim_ai.providers import DemoModel; result = Advisor(DemoModel()).run("Меры", suggest=True); assert result["status"] == "ok"; assert result["candidates"][0]["status"] == "unverified"'

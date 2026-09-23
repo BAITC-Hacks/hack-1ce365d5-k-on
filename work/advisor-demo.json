@@ -1,0 +1,471 @@
+{
+  "status": "ok",
+  "mode": "consult",
+  "briefing": {
+    "summary": {
+      "text": "Демонстрационный ответ: M5 — перевод частных домов на чистое топливо. Лаг означает задержку до начала эффекта.",
+      "evidence_ids": [
+        "M5",
+        "rules"
+      ]
+    },
+    "strengths": [
+      {
+        "text": "По каталогу мера направлена на улучшение качества воздуха и надёжности ЖКХ выбранного района.",
+        "evidence_ids": [
+          "M5"
+        ]
+      }
+    ],
+    "risks": [
+      {
+        "text": "Эффект проявляется с задержкой. Изменения итогового балла пока не рассчитаны.",
+        "evidence_ids": [
+          "M5",
+          "rules"
+        ]
+      }
+    ],
+    "next_step": "Выберите район; для оценки результата понадобится расчёт полного набора мер."
+  },
+  "simulation": null,
+  "candidates": [
+    {
+      "reason": "Гипотеза: поддержать соцсферу Нуры и воздух Сарыарки.",
+      "decisions": [
+        {
+          "measure_id": "M7",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M8",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M10",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M12",
+          "district_id": null
+        },
+        {
+          "measure_id": "M5",
+          "district_id": "SARYARKA"
+        }
+      ],
+      "status": "unverified",
+      "verified": false,
+      "simulation": null,
+      "errors": [],
+      "id": "candidate_1"
+    }
+  ],
+  "warnings": [
+    "ДЕМО: заранее написанный ответ, настоящая модель не вызывается."
+  ],
+  "evidence": {
+    "rules": {
+      "budget": 100,
+      "decision_count": 5,
+      "max_per_direction": 2,
+      "horizon_quarters": 8,
+      "critical_threshold_exclusive": 40,
+      "effect_fraction": "(8 - lag) / 8",
+      "score_formula": "0.7 * population_weighted_average + 0.3 * min_district_score - critical_count",
+      "leftover_budget_bonus": 0,
+      "global_conflicts": [
+        [
+          "M1",
+          "M3"
+        ]
+      ],
+      "same_district_conflicts": [
+        [
+          "M4",
+          "M7"
+        ],
+        [
+          "M5",
+          "M13"
+        ]
+      ]
+    },
+    "synergies": [
+      {
+        "pair": [
+          "M1",
+          "M2"
+        ],
+        "district_from": "M1",
+        "effects": {
+          "T1": 2
+        }
+      },
+      {
+        "pair": [
+          "M10",
+          "M12"
+        ],
+        "district_from": "M10",
+        "effects": {
+          "B1": 2
+        }
+      },
+      {
+        "pair": [
+          "M5",
+          "M6"
+        ],
+        "district_from": "M5",
+        "effects": {
+          "E2": 2
+        }
+      }
+    ],
+    "M1": {
+      "id": "M1",
+      "direction": "Транспорт",
+      "name": "Выделенные полосы для автобусов",
+      "scope": "district",
+      "cost": 18,
+      "lag": 2,
+      "full_effects": {
+        "T1": 6.0,
+        "T2": 9.0
+      }
+    },
+    "M2": {
+      "id": "M2",
+      "direction": "Транспорт",
+      "name": "Умные светофоры (адаптивное управление)",
+      "scope": "city",
+      "cost": 22,
+      "lag": 2,
+      "full_effects": {
+        "T1": 4.0,
+        "B2": 3.0
+      }
+    },
+    "M3": {
+      "id": "M3",
+      "direction": "Транспорт",
+      "name": "Линия ЛРТ / расширение",
+      "scope": "district",
+      "cost": 30,
+      "lag": 4,
+      "full_effects": {
+        "T1": 16.0,
+        "T2": 20.0,
+        "E2": 4.0
+      }
+    },
+    "M4": {
+      "id": "M4",
+      "direction": "Экология",
+      "name": "Парк / сквер",
+      "scope": "district",
+      "cost": 15,
+      "lag": 2,
+      "full_effects": {
+        "E1": 12.0,
+        "E2": 3.0,
+        "B1": 2.0
+      }
+    },
+    "M5": {
+      "id": "M5",
+      "direction": "Экология",
+      "name": "Перевод частного сектора на чистое топливо",
+      "scope": "district",
+      "cost": 25,
+      "lag": 3,
+      "full_effects": {
+        "E2": 14.0,
+        "C1": 4.0
+      }
+    },
+    "M6": {
+      "id": "M6",
+      "direction": "Экология",
+      "name": "Городская программа озеленения и ветрозащитных полос",
+      "scope": "city",
+      "cost": 20,
+      "lag": 4,
+      "full_effects": {
+        "E1": 5.0,
+        "E2": 3.0
+      }
+    },
+    "M7": {
+      "id": "M7",
+      "direction": "Соцсфера",
+      "name": "Школа + детсад (модульное строительство)",
+      "scope": "district",
+      "cost": 24,
+      "lag": 3,
+      "full_effects": {
+        "S1": 16.0
+      }
+    },
+    "M8": {
+      "id": "M8",
+      "direction": "Соцсфера",
+      "name": "Центр семейного здоровья / поликлиника",
+      "scope": "district",
+      "cost": 20,
+      "lag": 3,
+      "full_effects": {
+        "S2": 14.0
+      }
+    },
+    "M9": {
+      "id": "M9",
+      "direction": "Соцсфера",
+      "name": "Дворовые спорт-хабы",
+      "scope": "district",
+      "cost": 10,
+      "lag": 1,
+      "full_effects": {
+        "S1": 3.0,
+        "S2": 3.0,
+        "B1": 3.0
+      }
+    },
+    "M10": {
+      "id": "M10",
+      "direction": "Безопасность",
+      "name": "Освещение и камеры (расширение Safe City)",
+      "scope": "district",
+      "cost": 12,
+      "lag": 1,
+      "full_effects": {
+        "B1": 12.0,
+        "B2": 2.0
+      }
+    },
+    "M11": {
+      "id": "M11",
+      "direction": "Безопасность",
+      "name": "Безопасные переходы и школьные зоны",
+      "scope": "district",
+      "cost": 10,
+      "lag": 1,
+      "full_effects": {
+        "B2": 12.0,
+        "T1": -2.0
+      }
+    },
+    "M12": {
+      "id": "M12",
+      "direction": "Сервисы",
+      "name": "Единая цифровая платформа обращений",
+      "scope": "city",
+      "cost": 14,
+      "lag": 1,
+      "full_effects": {
+        "C2": 5.0
+      }
+    },
+    "M13": {
+      "id": "M13",
+      "direction": "Сервисы",
+      "name": "Модернизация тепло- и водосетей",
+      "scope": "district",
+      "cost": 28,
+      "lag": 4,
+      "full_effects": {
+        "C1": 18.0,
+        "E2": 2.0
+      }
+    },
+    "M14": {
+      "id": "M14",
+      "direction": "Сервисы",
+      "name": "Аварийные бригады ЖКХ + раннее оповещение",
+      "scope": "city",
+      "cost": 16,
+      "lag": 1,
+      "full_effects": {
+        "C1": 5.0,
+        "C2": 2.0
+      }
+    },
+    "ESIL": {
+      "id": "ESIL",
+      "name": "Есиль",
+      "population_share": 0.27,
+      "initial_indicators": {
+        "T1": 45.0,
+        "T2": 62.0,
+        "E1": 68.0,
+        "E2": 72.0,
+        "S1": 48.0,
+        "S2": 55.0,
+        "B1": 78.0,
+        "B2": 60.0,
+        "C1": 75.0,
+        "C2": 70.0
+      }
+    },
+    "ALMATY": {
+      "id": "ALMATY",
+      "name": "Алматы",
+      "population_share": 0.24,
+      "initial_indicators": {
+        "T1": 40.0,
+        "T2": 75.0,
+        "E1": 50.0,
+        "E2": 55.0,
+        "S1": 60.0,
+        "S2": 65.0,
+        "B1": 62.0,
+        "B2": 52.0,
+        "C1": 50.0,
+        "C2": 60.0
+      }
+    },
+    "SARYARKA": {
+      "id": "SARYARKA",
+      "name": "Сарыарка",
+      "population_share": 0.2,
+      "initial_indicators": {
+        "T1": 50.0,
+        "T2": 70.0,
+        "E1": 42.0,
+        "E2": 40.0,
+        "S1": 62.0,
+        "S2": 68.0,
+        "B1": 58.0,
+        "B2": 55.0,
+        "C1": 45.0,
+        "C2": 55.0
+      }
+    },
+    "BAIKONUR": {
+      "id": "BAIKONUR",
+      "name": "Байконур",
+      "population_share": 0.13,
+      "initial_indicators": {
+        "T1": 52.0,
+        "T2": 68.0,
+        "E1": 55.0,
+        "E2": 50.0,
+        "S1": 58.0,
+        "S2": 60.0,
+        "B1": 52.0,
+        "B2": 58.0,
+        "C1": 55.0,
+        "C2": 58.0
+      }
+    },
+    "NURA": {
+      "id": "NURA",
+      "name": "Нура",
+      "population_share": 0.16,
+      "initial_indicators": {
+        "T1": 55.0,
+        "T2": 40.0,
+        "E1": 45.0,
+        "E2": 65.0,
+        "S1": 38.0,
+        "S2": 35.0,
+        "B1": 55.0,
+        "B2": 50.0,
+        "C1": 60.0,
+        "C2": 50.0
+      }
+    },
+    "T1": {
+      "id": "T1",
+      "direction": "Транспорт",
+      "name": "Разгрузка дорог",
+      "meaning": "100 = нет пробок в час пик, 0 = стоит всё"
+    },
+    "T2": {
+      "id": "T2",
+      "direction": "Транспорт",
+      "name": "Доступность общественного транспорта",
+      "meaning": "100 = все жители в 500 м от остановки с интервалом ≤10 мин"
+    },
+    "E1": {
+      "id": "E1",
+      "direction": "Экология",
+      "name": "Озеленение",
+      "meaning": "100 = ≥20 м² зелени на жителя"
+    },
+    "E2": {
+      "id": "E2",
+      "direction": "Экология",
+      "name": "Качество воздуха",
+      "meaning": "100 = зимой AQI ≤50, 0 = хронический смог"
+    },
+    "S1": {
+      "id": "S1",
+      "direction": "Соцсфера",
+      "name": "Школы и детсады",
+      "meaning": "100 = 100% нормативной потребности, без 2-й смены"
+    },
+    "S2": {
+      "id": "S2",
+      "direction": "Соцсфера",
+      "name": "Поликлиники и первичная медпомощь",
+      "meaning": "100 = норматив на жителя выполнен полностью"
+    },
+    "B1": {
+      "id": "B1",
+      "direction": "Безопасность",
+      "name": "Безопасность улиц",
+      "meaning": "100 = освещение и камеры везде, минимум происшествий"
+    },
+    "B2": {
+      "id": "B2",
+      "direction": "Безопасность",
+      "name": "Безопасность дорожного движения",
+      "meaning": "100 = минимум ДТП с пострадавшими"
+    },
+    "C1": {
+      "id": "C1",
+      "direction": "Сервисы",
+      "name": "Надёжность ЖКХ",
+      "meaning": "100 = нет аварий отопления/воды за год"
+    },
+    "C2": {
+      "id": "C2",
+      "direction": "Сервисы",
+      "name": "Скорость решения обращений жителей",
+      "meaning": "100 = все обращения закрыты в срок"
+    },
+    "candidate_1": {
+      "reason": "Гипотеза: поддержать соцсферу Нуры и воздух Сарыарки.",
+      "decisions": [
+        {
+          "measure_id": "M7",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M8",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M10",
+          "district_id": "NURA"
+        },
+        {
+          "measure_id": "M12",
+          "district_id": null
+        },
+        {
+          "measure_id": "M5",
+          "district_id": "SARYARKA"
+        }
+      ],
+      "status": "unverified",
+      "verified": false,
+      "simulation": null,
+      "errors": [],
+      "id": "candidate_1"
+    }
+  },
+  "provider": "demo"
+}
