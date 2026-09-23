@@ -3,9 +3,13 @@
 Django hosts the API and calls the engine and Advisor directly in Python.
 React sends IDs, decisions, and chat messages. All paths below have **no trailing slash**.
 
-The engine, real catalog, and Advisor are not in this repository yet. Configure their
-callables to enable the corresponding routes. Unconfigured services return JSON
-with HTTP 503; there is no placeholder score or generated advice.
+The catalog and Advisor from the logic branch are connected by default. The catalog
+works immediately; real chat uses AKIM_AI_PROVIDER=openai and requires OPENAI_API_KEY
+and OPENAI_MODEL in the server environment. For an explicitly scripted offline chat,
+start the server with AKIM_AI_PROVIDER=demo. Demo replies are labeled in the reply text.
+
+The scoring engine remains the teammate's responsibility. /api/simulate returns
+HTTP 503 until GAME_SIMULATION_PROVIDER is configured.
 
 ## Connect the team modules
 
@@ -13,11 +17,11 @@ Set these environment variables before starting Django (or set them in settings.
 
 | Setting | Example dotted callable path | Python interface |
 | --- | --- | --- |
-| GAME_CATALOG_PROVIDER | engine.api.get_catalog | get_catalog() -> dict |
+| GAME_CATALOG_PROVIDER | akim_ai.agent.load_catalog (default) | get_catalog() -> dict |
 | GAME_SIMULATION_PROVIDER | engine.api.simulate | simulate(*, decisions: list[dict]) -> dict |
-| ADVISOR_REPLY_PROVIDER | advisor.api.reply | reply(*, message: str, history: list[dict], simulation: dict \| None) -> str |
+| ADVISOR_REPLY_PROVIDER | game_api.integrations.reply (default) | reply(*, message: str, history: list[dict], simulation: dict \| None) -> str |
 
-The dotted paths are examples; point them at your real modules.
+Catalog and Advisor paths above are working defaults. The engine path is an example.
 Django does not automatically load a .env file.
 
 The catalog provider must return the structure below, using the team's agreed IDs.
@@ -25,9 +29,11 @@ The engine receives five validated decisions and must enforce game rules such as
 budget and incompatible measures. For a game-rule violation, raise
 game_api.errors.SimulationRejected("Player-facing explanation"); Django returns
 HTTP 400 with code invalid_decisions and preserves the previous run.
-Its result must be a plain JSON object with
-finite numbers. The API preserves its fields; agree the actual score/result schema
-with the engine and React teammates.
+Its result must be a plain JSON object with finite numbers. The connected Advisor
+requires valid: true and a finite numeric score; the API does not invent either.
+Additional result fields are preserved. The real catalog also forbids repeating a
+measure across districts, limits each direction to two measures, and defines budget
+and conflict rules. The engine must enforce these before returning valid: true.
 
 The Advisor receives:
 - message: the current question, separate from history;
@@ -35,11 +41,13 @@ The Advisor receives:
 - simulation: null before the first calculation, otherwise
   {"decisions": [...], "result": {...}} from Django's engine call.
 
-Its return value is a non-empty string, at most 12,000 characters.
-Adapt the existing Advisor behind this function. Disable its terminal file memory:
-use the supplied history and simulation. Do not reuse a mutable global Advisor
-conversation or save all players into one local file. AI provider timeouts and
-credentials belong in that adapter.
+The connected adapter creates a new Advisor/model for each request, passes session
+history separately from the question, and formats its validated briefing as reply.
+It does not use file memory or a shared global conversation. The existing message-only
+HTTP contract is unchanged; structured candidate planning remains available through
+the library and CLI with suggest=true (see [Advisor guide](advisor.md)).
+Replies are limited to 12,000 characters. A longer formatted briefing is truncated.
+AI failures return JSON errors without appending partial conversation turns.
 
 Django stores the most recent simulation and last 20 successful conversation turns
 in database-backed sessions. A session cookie identifies an anonymous player; tabs
@@ -52,17 +60,52 @@ message order; session writes do not serialize overlapping requests.
 ## GET /api/catalog
 
 Returns HTTP 200 and sets the csrftoken cookie for subsequent POST requests.
-Example shape (illustrative IDs, names, and prices; replace with the real catalog):
+Excerpt from the connected catalog (the full response includes all 5 districts,
+14 measures, indicators, rules, and synergies):
 
 ```json
 {
-  "districts": [{"id": "SARYARKA", "name": "Сарыарка"}],
+  "districts": [
+    {
+      "id": "SARYARKA",
+      "name": "Сарыарка"
+    },
+    {
+      "id": "NURA",
+      "name": "Нура"
+    }
+  ],
   "measures": [
-    {"id": "M1", "name": "Мера 1", "cost": 100, "scope": "district"},
-    {"id": "M2", "name": "Мера 2", "cost": 200, "scope": "district"},
-    {"id": "M3", "name": "Мера 3", "cost": 300, "scope": "district"},
-    {"id": "M4", "name": "Городская мера", "cost": 400, "scope": "city"},
-    {"id": "M5", "name": "Мера 5", "cost": 500, "scope": "district"}
+    {
+      "id": "M5",
+      "name": "Перевод частного сектора на чистое топливо",
+      "cost": 25,
+      "scope": "district"
+    },
+    {
+      "id": "M7",
+      "name": "Школа + детсад (модульное строительство)",
+      "cost": 24,
+      "scope": "district"
+    },
+    {
+      "id": "M8",
+      "name": "Центр семейного здоровья / поликлиника",
+      "cost": 20,
+      "scope": "district"
+    },
+    {
+      "id": "M10",
+      "name": "Освещение и камеры (расширение Safe City)",
+      "cost": 12,
+      "scope": "district"
+    },
+    {
+      "id": "M12",
+      "name": "Единая цифровая платформа обращений",
+      "cost": 14,
+      "scope": "city"
+    }
   ]
 }
 ```
@@ -77,11 +120,26 @@ Request:
 ```json
 {
   "decisions": [
-    {"measure_id": "M1", "district_id": "SARYARKA"},
-    {"measure_id": "M2", "district_id": "SARYARKA"},
-    {"measure_id": "M3", "district_id": "SARYARKA"},
-    {"measure_id": "M4", "district_id": null},
-    {"measure_id": "M5", "district_id": "SARYARKA"}
+    {
+      "measure_id": "M7",
+      "district_id": "NURA"
+    },
+    {
+      "measure_id": "M8",
+      "district_id": "NURA"
+    },
+    {
+      "measure_id": "M10",
+      "district_id": "NURA"
+    },
+    {
+      "measure_id": "M12",
+      "district_id": null
+    },
+    {
+      "measure_id": "M5",
+      "district_id": "SARYARKA"
+    }
   ]
 }
 ```

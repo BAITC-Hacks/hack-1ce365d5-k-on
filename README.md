@@ -1,26 +1,14 @@
-# hack-1ce365d5-k-on
-Hackathon team repository for K-On!
+# Аким на 5 часов — K-On!
 
-Curently choosed "Спец-трек Astana Innovations"
-Roles:
-Erasyl: Engine
-Temirlan: Ai logic
-Miras: Designer
+Hackathon team repository for «Спец-трек Astana Innovations».
 
-## Django API
+- Erasyl: engine and Django API
+- Temirlan: AI logic
+- Miras: design and React
 
-Implemented routes:
+## Run Django
 
-- GET /api/catalog
-- POST /api/simulate
-- POST /api/advisor/chat
-
-See [the API contract and React integration guide](docs/api.md) for JSON examples,
-CSRF/session handling, and the Python interfaces for the engine and Advisor.
-Those team modules still need to be connected through the three provider settings;
-the API returns explicit errors until they are configured.
-
-Run locally (Python 3.12+):
+Python 3.12+ is required.
 
 ```bash
 python -m pip install -r requirements.txt
@@ -28,12 +16,44 @@ python manage.py migrate
 python manage.py runserver
 ```
 
-If using the existing virtual environment, prefix Python commands with .venv/bin/.
-Apply migrations before using chat, because each player's state lives in Django
-database sessions.
+Use `.venv/bin/python` if the virtual environment is not activated.
 
-Run API tests:
+## Connected routes
+
+- `GET /api/catalog` serves the real catalog from `akim_ai/catalog.json`.
+- `POST /api/advisor/chat` calls the merged `akim_ai.Advisor`, with each player's
+  history and latest trusted simulation supplied by Django's database session.
+- `POST /api/simulate` is ready for the teammate's engine. No scoring engine is
+  included; this route returns 503 until `GAME_SIMULATION_PROVIDER` is configured.
+
+For real AI replies, set `AKIM_AI_PROVIDER=openai` (the default), `OPENAI_API_KEY`,
+and `OPENAI_MODEL` in the server's environment. No model is selected automatically,
+and missing credentials produce a clear 503 response. The existing OpenAI adapter
+has a 45-second network timeout.
+
+To check the complete chat route without credentials or network calls:
 
 ```bash
-python manage.py test game_api
+AKIM_AI_PROVIDER=demo python manage.py runserver
+```
+
+Demo replies explicitly identify themselves as scripted examples; they do not
+understand arbitrary questions. The `.env.example` file lists settings, but
+Django and the CLI do not automatically read `.env`.
+
+See [the API contract and React examples](docs/api.md) for request bodies and CSRF.
+The [Advisor guide](docs/advisor.md) preserves the logic branch's CLI instructions,
+structured responses, and planning workflow.
+
+## Tests
+
+```bash
+python manage.py test
+```
+
+This runs both API integration tests and the Advisor's unit tests without paid API
+calls. The standalone CLI remains available:
+
+```bash
+python -m akim_ai --provider demo --input examples/request.json
 ```

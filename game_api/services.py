@@ -33,6 +33,9 @@ def _call_provider(setting, validator, **kwargs):
         value = json.loads(json.dumps(value, allow_nan=False))
         validator(value)
         return value
+    except APIError:
+        # Trusted adapters may expose actionable configuration and context errors.
+        raise
     except SimulationRejected as exc:
         if setting == "GAME_SIMULATION_PROVIDER":
             raise APIError("invalid_decisions", str(exc), 400) from exc

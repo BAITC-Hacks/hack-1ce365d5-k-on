@@ -129,9 +129,10 @@ MAILERS = {
 }
 
 # Team modules expose the callable interfaces documented in docs/api.md.
-GAME_CATALOG_PROVIDER = os.environ.get('GAME_CATALOG_PROVIDER', '')
+GAME_CATALOG_PROVIDER = os.environ.get('GAME_CATALOG_PROVIDER', 'akim_ai.agent.load_catalog')
 GAME_SIMULATION_PROVIDER = os.environ.get('GAME_SIMULATION_PROVIDER', '')
-ADVISOR_REPLY_PROVIDER = os.environ.get('ADVISOR_REPLY_PROVIDER', '')
+ADVISOR_REPLY_PROVIDER = os.environ.get('ADVISOR_REPLY_PROVIDER', 'game_api.integrations.reply')
+AKIM_AI_PROVIDER = os.environ.get('AKIM_AI_PROVIDER', 'openai')
 
 # Player history and authoritative simulation results stay on the server.
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
